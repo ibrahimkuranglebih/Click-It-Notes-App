@@ -13,13 +13,17 @@ import { Status, Type } from '@prisma/client';
 const NoteSchema = z.object({
     userId : z.string().min(10),
     title: z.string().min(1, "Judul harus diisi"),
-    deskripsi: z.string().min(10, "Deskripsi minimal 10 karakter"),
+    deskripsi: z.string().min(3, "Deskripsi minimal 3 karakter"),
     taskType: z.enum(["work", "study", "event", "task", "others"]).default("others"),
     taskStatus: z.enum(["unfinished", "finished"]).default("unfinished"),
 });
 
 export const SaveNote = async (prevState: any, formData: FormData) => {
-    console.log("Received formData:", Object.fromEntries(formData)); // Debugging
+    const formDataObj: { [key: string]: FormDataEntryValue } = {};
+    for (const [key, value] of (formData as any)) {
+        formDataObj[key] = value;
+    }
+    console.log("Received formData:", formDataObj); // Debugging
     
     const validateNotes = NoteSchema.safeParse({
         userId: formData.get("userId"),

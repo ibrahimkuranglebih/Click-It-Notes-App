@@ -93,7 +93,7 @@ export const DeleteButton = ({id, onDeleteSuccess}) => {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button className="bg-red-400 rounded-lg p-2 w-fit text-sm hover:bg-red-600">
+        <Button className="bg-red-400 rounded-lg p-2 w-fit text-sm hover:bg-red-600 shadow-md">
           <MdOutlineDelete className="text-lg" />
         </Button>
       </AlertDialogTrigger>

@@ -1,6 +1,6 @@
 'use client'
 import React, { useState, useEffect } from 'react';
-import { DeleteButton, EditButton } from '@/components/button';
+import { DeleteButton } from '@/components/button';
 import { useRouter } from 'next/navigation';
 import { CiCirclePlus } from 'react-icons/ci';
 import { Sidebar } from '@/components/sidebar';
@@ -10,15 +10,33 @@ import { ChevronLeftIcon, XIcon } from 'lucide-react';
 import CreateNoteComponents from '@/components/create-form';
 import { useSession, signOut } from "next-auth/react";
 import { getNotes } from '@/lib/data';
+import { MdModeEditOutline } from 'react-icons/md';
+import { getTaskTypeStyle } from '@/utils/taskTypeStyles';
 
 const Notes = () => {
   const router = useRouter();
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null); 
-  const [showModal, setShowModal] = useState(false);
+  const [showModalAdd, setShowModalAdd] = useState(false);
+  const [showModalEdit, setShowModalEdit] = useState(false);
   const [user, setUser] = useState(null);
   const { data: session, status } = useSession();
+  const bulanIndonesia = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+  ];
+
+  const formatTanggal = (dateString) => {
+    const date = new Date(dateString);
+    const hari = date.getDate();
+    const bulan = bulanIndonesia[date.getMonth()];
+    const tahun = date.getFullYear();
+    const jam = date.getHours();
+    const menit = date.getMinutes().toString().padStart(2, '0');
+    
+    return `${hari} ${bulan} ${tahun}, ${jam}.${menit}`;
+  };
 
   const fetchNotes = async () => {
     try {
@@ -44,27 +62,27 @@ const Notes = () => {
   }, []);
 
   
-useEffect(() => {
-  const token = localStorage.getItem("authToken");
-  const storedUser = JSON.parse(localStorage.getItem("user") || "null");
+  useEffect(() => {
+    const token = localStorage.getItem("authToken");
+    const storedUser = JSON.parse(localStorage.getItem("user") || "null");
 
-  if (!token || !storedUser?.id) {
-      router.push("/auth");
-      return;
-  }
+    if (!token || !storedUser?.id) {
+        router.push("/auth");
+        return;
+    }
 
-  const username = storedUser.email;
-  const match = username.match(/^(.+)@gmail\.com$/);
-  const name = match ? match[1] : username; 
-  storedUser.email = name;
-  setUser(storedUser); 
+    const username = storedUser.email;
+    const match = username.match(/^(.+)@gmail\.com$/);
+    const name = match ? match[1] : username; 
+    storedUser.email = name;
+    setUser(storedUser); 
 
-  fetchNotes();
-}, [router]);
+    fetchNotes();
+  }, [router]);
 
   const handleSuccess = async () => {
     await fetchNotes(); 
-    setShowModal(false); 
+    setShowModalAdd(false); 
     router.push("/notes");
   };
   
@@ -93,7 +111,7 @@ useEffect(() => {
             <ChevronLeftIcon className='text-white transition-transform duration-300 group-hover:-translate-x-1' />
           </button>
           <div className='flex flex-col'>
-            <p className='text-xl font-medium'>Halo, {user.email}!</p>
+            <p className='text-xl font-medium'>Hello, {user.email}!</p>
             <p className='text-4xl font-bold text-indigo-400'>Your Notes</p>
           </div>
         </div>
@@ -102,29 +120,46 @@ useEffect(() => {
             <div key={note.id} className='shadow-md rounded-lg p-4 border flex flex-col justify-between break-all'>
               <h1 className='font-bold text-2xl'>{note.title}</h1>
               <p className='text-sm'>{note.deskripsi}</p>
-              <p className='text-sm bg-blue-300 p-1 rounded-xl w-fit'>{note.taskType}</p>
+              <p className={`mt-2 text-sm bg-blue-300 px-2 py-1 rounded-md  w-fit ${getTaskTypeStyle(note.taskType)}`}>{note.taskType}</p>
+              <p>{formatTanggal(note.tanggalDibuat)}</p>
               <div className='mt-4 flex flex-row gap-2'>
-                <EditButton id={note.id} />
+                <button onClick={() => setShowModalEdit(true)} className=' bg-blue-200 flex items-center justify-center shadow-md hover:bg-indigo-400 duration-300 w-fit p-2 rounded-lg text-sm'>
+                  <MdModeEditOutline className='text-lg'/>
+                </button>
                 <DeleteButton id={note.id} onDeleteSuccess={handleDeleteSuccess} />
               </div>
             </div>
           ))}
-          <button onClick={() => setShowModal(true)} className='p-3 rounded-lg border-2 border-dashed duration-300 hover:bg-indigo-100 flex justify-center items-center text-3xl text-gray-400 h-56'>
+          <button onClick={() => setShowModalAdd(true)} className='shadow-md p-3 rounded-lg border-2 border-dashed duration-300 hover:bg-indigo-100 flex justify-center items-center text-3xl text-gray-400 h-56'>
             <CiCirclePlus />
           </button>
         </div>
       </div>
 
-      {showModal && (
+      {showModalAdd && (
         <div className='fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50'>
           <Pointer>
             <LuMousePointer2 className='text-2xl text-indigo-600 fill-indigo-500 '/>
           </Pointer>
           <div className='bg-white p-6 rounded-lg shadow-lg w-[500px] relative'>
-            <button className='absolute top-3 right-3' onClick={() => setShowModal(false)}>
+            <button className='absolute top-3 right-3' onClick={() => setShowModalAdd(false)}>
               <XIcon className='text-gray-500 hover:text-gray-700' />
             </button>
             <CreateNoteComponents onSuccess ={handleSuccess}/>
+          </div>
+        </div>
+      )}
+
+      {showModalEdit && (
+        <div className='fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50'>
+          <Pointer>
+            <LuMousePointer2 className='text-2xl text-indigo-600 fill-indigo-500 '/>
+          </Pointer>
+          <div className='bg-white p-6 rounded-lg shadow-lg w-[500px] relative'>
+            <button className='absolute top-3 right-3' onClick={() => setShowModalEdit(false)}>
+              <XIcon className='text-gray-500 hover:text-gray-700' />
+            </button>
+
           </div>
         </div>
       )}
