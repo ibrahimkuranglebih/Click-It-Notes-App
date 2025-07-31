@@ -87,11 +87,7 @@ const Notes = () => {
   };
   
   // Update your logout function
-  const handleLogout = () => {
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("user");
-    router.push("/auth");
-  };
+
 
   const handleDeleteSuccess = async () => {
     await fetchNotes(); // Ambil data terbaru setelah penghapusan
