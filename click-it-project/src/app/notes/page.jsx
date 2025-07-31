@@ -75,6 +75,9 @@ useEffect(() => {
     router.push("/auth");
   };
 
+  const handleDeleteSuccess = async () => {
+    await fetchNotes(); // Ambil data terbaru setelah penghapusan
+  };
 
   if (status === "loading" || loading) return <p>Loading...</p>;
 
@@ -102,7 +105,7 @@ useEffect(() => {
               <p className='text-sm bg-blue-300 p-1 rounded-xl w-fit'>{note.taskType}</p>
               <div className='mt-4 flex flex-row gap-2'>
                 <EditButton id={note.id} />
-                <DeleteButton id={note.id} />
+                <DeleteButton id={note.id} onDeleteSuccess={handleDeleteSuccess} />
               </div>
             </div>
           ))}

@@ -106,14 +106,13 @@ export const updateNote = async (id: string, prevState: any, formData: FormData)
 };
 
 export const deleteNote = async (id: string) => {
-    try {
-        await prisma.note.delete({
-            where: {id}
-        });
-        console.log("Note deleted successfully:", id);
-        revalidatePath('/notes');
-        return { success: true, message: "Note berhasil dihapus", shouldRedirect: true };
-    } catch (error) {
-        return { Error: { general: "Gagal menghapus catatan. Coba lagi nanti." } };
-    }
+  try {
+    await prisma.note.delete({
+      where: {id}
+    });
+    revalidatePath('/notes');
+    return { success: true, message: "Note berhasil dihapus" };
+  } catch (error) {
+    return { Error: { general: "Gagal menghapus catatan. Coba lagi nanti." } };
+  }
 };
