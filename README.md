@@ -5,5 +5,3 @@
 ## - Prisma ORM
 ## - TailwindCSS
 ## - PostgreSQL
-
-wow
