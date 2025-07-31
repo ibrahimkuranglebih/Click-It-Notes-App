@@ -69,23 +69,23 @@ export const EditButton = ({id}) => {
  *@param {Object} props
  *@param {string} props.id
 **/
-export const DeleteButton = ({id}) => {
+export const DeleteButton = ({id, onDeleteSuccess}) => {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleDeleteNote = async () =>{
+  const handleDeleteNote = async () => {
     try {
+      setIsDeleting(true);
       const res = await deleteNote(id);
       if(res?.success) {
         toast.success("Note berhasil dihapus");
-        Window.location.reload();
-        router.push("/notes");
+        onDeleteSuccess(); // Panggil callback setelah berhasil
       } else {
         toast.error(res?.Error?.general || "Gagal menghapus note");
       }
     } catch (error) {
       toast.error("Terjadi kesalahan saat menghapus note");
-    } finally{
+    } finally {
       setIsDeleting(false);
     }
   }
@@ -93,7 +93,7 @@ export const DeleteButton = ({id}) => {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button className="bg-red-400 rounded-lg p-2 w-fit text-sm hover:bg-red-600">
+        <Button className="bg-red-400 rounded-lg p-2 w-fit text-sm hover:bg-red-600 shadow-md">
           <MdOutlineDelete className="text-lg" />
         </Button>
       </AlertDialogTrigger>

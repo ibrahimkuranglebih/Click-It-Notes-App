@@ -60,7 +60,6 @@ export const session = async (req, res) => {
     }
 };
 
-// 📌 Fungsi GETME
 export const getMe = async (req, res) => {
     try {
         const user = await prisma.user.findUnique({

@@ -13,13 +13,17 @@ import { Status, Type } from '@prisma/client';
 const NoteSchema = z.object({
     userId : z.string().min(10),
     title: z.string().min(1, "Judul harus diisi"),
-    deskripsi: z.string().min(10, "Deskripsi minimal 10 karakter"),
+    deskripsi: z.string().min(3, "Deskripsi minimal 3 karakter"),
     taskType: z.enum(["work", "study", "event", "task", "others"]).default("others"),
     taskStatus: z.enum(["unfinished", "finished"]).default("unfinished"),
 });
 
 export const SaveNote = async (prevState: any, formData: FormData) => {
-    console.log("Received formData:", Object.fromEntries(formData)); // Debugging
+    const formDataObj: { [key: string]: FormDataEntryValue } = {};
+    for (const [key, value] of (formData as any)) {
+        formDataObj[key] = value;
+    }
+    console.log("Received formData:", formDataObj); // Debugging
     
     const validateNotes = NoteSchema.safeParse({
         userId: formData.get("userId"),
@@ -106,14 +110,13 @@ export const updateNote = async (id: string, prevState: any, formData: FormData)
 };
 
 export const deleteNote = async (id: string) => {
-    try {
-        await prisma.note.delete({
-            where: {id}
-        });
-        console.log("Note deleted successfully:", id);
-        revalidatePath('/notes');
-        return { success: true, message: "Note berhasil dihapus", shouldRedirect: true };
-    } catch (error) {
-        return { Error: { general: "Gagal menghapus catatan. Coba lagi nanti." } };
-    }
+  try {
+    await prisma.note.delete({
+      where: {id}
+    });
+    revalidatePath('/notes');
+    return { success: true, message: "Note berhasil dihapus" };
+  } catch (error) {
+    return { Error: { general: "Gagal menghapus catatan. Coba lagi nanti." } };
+  }
 };

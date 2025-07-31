@@ -1,2 +1,7 @@
 # Click-It-Notes-App
-This notes app that allows you to make, edit and analyse your notes journey
+## This App made by Ibrahim to make, edit, and track your notes
+## **Tech Stack**
+## - NextJS
+## - Prisma ORM
+## - TailwindCSS
+## - PostgreSQL
