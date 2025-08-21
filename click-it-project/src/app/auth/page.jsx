@@ -10,50 +10,83 @@ export default function AuthPage() {
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const { data: session } = useSession(); // Gunakan NextAuth session
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [errors, setErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
+  const { data: session } = useSession();
   const router = useRouter();
 
-  // Jika sudah login, redirect ke /notes
   useEffect(() => {
-    console.log("Session Data:", session); // Debugging
     if (session) {
-        router.push("/notes");
+      router.push("/notes");
     }
   }, [session, router]);
 
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!email) {
+      newErrors.email = "Email is required";
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = "Email is invalid";
+    }
+    
+    if (!password) {
+      newErrors.password = "Password is required";
+    } else if (password.length < 8) {
+      newErrors.password = "Password must be at least 8 characters";
+    }
+    
+    if (isRegister) {
+      if (!confirmPassword) {
+        newErrors.confirmPassword = "Please confirm your password";
+      } else if (password !== confirmPassword) {
+        newErrors.confirmPassword = "Passwords do not match";
+      }
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    try {
-        const res = await fetch("http://localhost:5000/api/auth/login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password }),
-        });
-
-        if (!res.ok) {
-            const errorText = await res.text();
-            throw new Error(errorText || "Authentication failed");
-        }
-
-        const data = await res.json();
-        console.log("Response:", data);
-
-        if (data.token && data.user) {
-            localStorage.setItem("authToken", data.token);
-            localStorage.setItem("user", JSON.stringify(data.user)); // Simpan user sebagai JSON
-
-            router.push("/notes"); // Redirect setelah login
-        } else {
-            throw new Error("Invalid response from server");
-        }
-    } catch (error) {
-        console.error("Authentication error:", error);
-        alert(error.message || "Authentication failed");
+    
+    if (!validateForm()) {
+      return;
     }
-};
+    
+    setIsLoading(true);
+    
+    try {
+      const endpoint = isRegister ? "register" : "login";
+      const res = await fetch(`http://localhost:5000/api/auth/${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Authentication failed");
+      }
+
+      const data = await res.json();
+      
+      if (data.token && data.user) {
+        localStorage.setItem("authToken", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
+        router.push("/notes");
+      } else {
+        throw new Error("Invalid response from server");
+      }
+    } catch (error) {
+      console.error("Authentication error:", error);
+      alert(error.message || "Authentication failed");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="flex flex-row h-screen overflow-hidden font-Instrument_Sans">
@@ -111,27 +144,63 @@ export default function AuthPage() {
             {isRegister ? "Register" : "Login"}
           </h2>
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="border border-gray-300 p-2 rounded-md hover:shadow-inner duration-300"
-              required
-            />
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="border border-gray-300 p-2 rounded-md hover:shadow-inner duration-300"
-              required
-            />
+            <div>
+              <input
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className={`border ${errors.email ? 'border-red-500' : 'border-gray-300'} p-2 rounded-md hover:shadow-inner duration-300 w-full`}
+                required
+              />
+              {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+            </div>
+            
+            <div>
+              <input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className={`border ${errors.password ? 'border-red-500' : 'border-gray-300'} p-2 rounded-md hover:shadow-inner duration-300 w-full`}
+                required
+              />
+              {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
+              {isRegister && (
+                <p className="text-xs text-gray-500 mt-1">Password must be at least 8 characters</p>
+              )}
+            </div>
+            
+            {isRegister && (
+              <div>
+                <input
+                  type="password"
+                  placeholder="Confirm Password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className={`border ${errors.confirmPassword ? 'border-red-500' : 'border-gray-300'} p-2 rounded-md hover:shadow-inner duration-300 w-full`}
+                  required={isRegister}
+                />
+                {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>}
+              </div>
+            )}
+            
             <button
               type="submit"
-              className="bg-indigo-500 text-white p-2 rounded-md hover:bg-indigo-600"
+              className="bg-indigo-500 text-white p-2 rounded-md hover:bg-indigo-600 disabled:opacity-50"
+              disabled={isLoading}
             >
-              {isRegister ? "Register" : "Login"}
+              {isLoading ? (
+                <span className="flex items-center justify-center">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Processing...
+                </span>
+              ) : (
+                isRegister ? "Register" : "Login"
+              )}
             </button>
           </form>
 
@@ -146,13 +215,16 @@ export default function AuthPage() {
                 d="M21.8 10.23h-9.54v3.92h5.6c-.5 2.1-2.13 3.61-4.06 3.61-2.55 0-4.65-2.1-4.65-4.66s2.1-4.65 4.65-4.65c1.27 0 2.4.5 3.23 1.34l2.83-2.83C18.36 4.36 16.35 3.5 14.1 3.5c-4.88 0-8.84 3.97-8.84 8.85s3.96 8.85 8.84 8.85c4.88 0 8.75-3.97 8.75-8.85 0-.54-.04-1.08-.11-1.61z"
               />
             </svg>
-            Login with Google
+            {isRegister ? "Register" : "Login"} with Google
           </button>
 
           <p className="text-center mt-3">
             {isRegister ? "Already have an account? " : "Don't have an account? "}
             <button
-              onClick={() => setIsRegister(!isRegister)}
+              onClick={() => {
+                setIsRegister(!isRegister);
+                setErrors({});
+              }}
               className="text-indigo-400 hover:text-indigo-500"
             >
               {isRegister ? "Login" : "Register"}

@@ -60,8 +60,8 @@ export const SaveNote = async (prevState: any, formData: FormData) => {
                 userId: validateNotes.data.userId,
                 title: validateNotes.data.title,
                 deskripsi: validateNotes.data.deskripsi,
-                taskType, // Cast ke enum Prisma
-                taskStatus, // Cast ke enum Prisma
+                taskType, 
+                taskStatus, 
             },
         });
 
@@ -74,38 +74,46 @@ export const SaveNote = async (prevState: any, formData: FormData) => {
     }
 };
 
-export const updateNote = async (id: string, prevState: any, formData: FormData) => {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
-        return { Error: { general: "Anda harus login terlebih dahulu." } };
-    }
 
-    const validateNotes = NoteSchema.safeParse(Object.fromEntries(formData.entries()));
-    if (!validateNotes.success) {
-        return { Error: validateNotes.error.flatten().fieldErrors };
-    }
+export const updateNote = async (id: string, prevState: any, formData: FormData) => {
 
     try {
+        const validateNotes = NoteSchema.safeParse({
+            userId: formData.get("userId"),
+            title: formData.get("title"),
+            deskripsi: formData.get("deskripsi"),
+            taskType: formData.get("taskType"),
+            taskStatus: formData.get("taskStatus")
+        });
+
+        if (!validateNotes.success) {
+            console.error("Validation error:", validateNotes.error.flatten());
+            return { Error: validateNotes.error.flatten().fieldErrors };
+        }
+
+        console.log("Validated data:", validateNotes.data);
+
         const updatedNote = await prisma.note.update({
-            where: { id, userEmail: session.user.email },
+            where: { 
+                id,
+                userId: validateNotes.data.userId 
+            },
             data: {
                 title: validateNotes.data.title,
                 deskripsi: validateNotes.data.deskripsi,
                 taskType: validateNotes.data.taskType,
-                taskStatus: validateNotes.data.taskStatus
+                taskStatus: validateNotes.data.taskStatus,
+                tanggalDiubah: new Date() 
             }
         });
 
-        console.log("Update success:", updatedNote);
-    } catch (error) {
-        return { Error: { general: "Gagal mengupdate catatan. Coba lagi nanti." } };
-    }
-
-    try {
+        console.log("Successfully updated note:", updatedNote);
+        
         revalidatePath("/notes");
-        redirect("/notes");
+        return { success: true, data: updatedNote };
     } catch (error) {
-        console.error("Gagal melakukan revalidatePath:", error);
+        console.error("Full error during update:", error);
+        return { Error: { general: "Gagal mengupdate catatan. Coba lagi nanti." } };
     }
 };
 

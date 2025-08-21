@@ -32,7 +32,6 @@ export const login = async (req, res) => {
             maxAge: 3600000,
         });
 
-        // ✅ Kirim token dalam respons
         res.json({ message: "Login berhasil", user, token });
     } catch (error) {
         console.error("Error saat login:", error);
@@ -87,8 +86,19 @@ export const register = async (req, res) => {
             return res.status(400).json({ error: "Email dan password wajib diisi" });
         }
 
-        // Cek apakah email sudah digunakan
-        const existingUser = await prisma.user.findUnique({ where: { email } });
+        if (!/\S+@\S+\.\S+/.test(email)) {
+            return res.status(400).json({ error: "Format email tidak valid" });
+        }
+
+
+        if (password.length < 8) {
+            return res.status(400).json({ error: "Password minimal 8 karakter" });
+        }
+
+        const existingUser = await prisma.user.findUnique({ 
+            where: { email } 
+        });
+        
         if (existingUser) {
             return res.status(400).json({ error: "Email sudah terdaftar" });
         }
@@ -109,9 +119,33 @@ export const register = async (req, res) => {
             },
         });
 
-        res.status(201).json({ message: "Registrasi berhasil", user: newUser });
+        // Generate token
+        const token = jwt.sign(
+            { id: newUser.id, email: newUser.email },
+            process.env.JWT_SECRET,
+            { expiresIn: "1h" }
+        );
+
+        // Set cookie
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            maxAge: 3600000,
+        });
+
+        res.status(201).json({ 
+            message: "Registrasi berhasil", 
+            user: newUser,
+            token 
+        });
     } catch (error) {
         console.error("Error saat registrasi:", error);
+        
+        // Handle error unik constraint khusus
+        if (error.code === 'P2002' && error.meta?.target?.includes('email')) {
+            return res.status(400).json({ error: "Email sudah terdaftar" });
+        }
+        
         res.status(500).json({ error: "Terjadi kesalahan di server" });
     }
 };
