@@ -12,14 +12,16 @@ import { useSession, signOut } from "next-auth/react";
 import { getNotes } from '@/lib/data';
 import { MdModeEditOutline } from 'react-icons/md';
 import { getTaskTypeStyle } from '@/utils/taskTypeStyles';
+import EditFormComponent from '@/components/edit-form';
 
 const Notes = () => {
   const router = useRouter();
   const [notes, setNotes] = useState([]);
+  const [sortBy, setSortBy] = useState('created');
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null); 
   const [showModalAdd, setShowModalAdd] = useState(false);
   const [showModalEdit, setShowModalEdit] = useState(false);
+  const [editingNote, setEditingNote] = useState(null);
   const [user, setUser] = useState(null);
   const { data: session, status } = useSession();
   const bulanIndonesia = [
@@ -37,6 +39,14 @@ const Notes = () => {
     
     return `${hari} ${bulan} ${tahun}, ${jam}.${menit}`;
   };
+
+  const sortedNotes = [...notes].sort((a, b) => {
+    if (sortBy === 'created') {
+      return new Date(b.tanggalDibuat) - new Date(a.tanggalDibuat);
+    } else {
+      return new Date(b.tanggalDiubah) - new Date(a.tanggalDiubah);
+    }
+  });
 
   const fetchNotes = async () => {
     try {
@@ -85,9 +95,6 @@ const Notes = () => {
     setShowModalAdd(false); 
     router.push("/notes");
   };
-  
-  // Update your logout function
-
 
   const handleDeleteSuccess = async () => {
     await fetchNotes(); // Ambil data terbaru setelah penghapusan
@@ -110,23 +117,39 @@ const Notes = () => {
             <p className='text-xl font-medium'>Hello, {user.email}!</p>
             <p className='text-4xl font-bold text-indigo-400'>Your Notes</p>
           </div>
+          <div className="ml-auto">
+            <span>Sort by : </span>
+            <select 
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="p-2 border rounded-md bg-white"
+            >
+              <option value="created">Newest Created</option>
+              <option value="updated">Recently Updated</option>
+            </select>
+          </div>
         </div>
         <div className='grid xl:grid-cols-4 m-10 gap-6 border-2 p-4 border-gray-200 rounded-xl h-fit'>
-          {notes.map((note) => (
+          {sortedNotes.map((note) => (
             <div key={note.id} className='shadow-md rounded-lg p-4 border flex flex-col justify-between break-all'>
               <h1 className='font-bold text-2xl'>{note.title}</h1>
               <p className='text-sm'>{note.deskripsi}</p>
-              <p className={`mt-2 text-sm bg-blue-300 px-2 py-1 rounded-md  w-fit ${getTaskTypeStyle(note.taskType)}`}>{note.taskType}</p>
-              <p>{formatTanggal(note.tanggalDibuat)}</p>
+              <p className={`mt-2 text-sm bg-blue-300 px-2 py-1 rounded-md w-fit ${getTaskTypeStyle(note.taskType)}`}>{note.taskType}</p>
+              <p className='text-sm mt-1'>Dibuat : {formatTanggal(note.tanggalDibuat)}</p>
+              <p className='text-sm mt-[2px]'>Diedit : {formatTanggal(note.tanggalDiubah)}</p>
               <div className='mt-4 flex flex-row gap-2'>
-                <button onClick={() => setShowModalEdit(true)} className=' bg-blue-200 flex items-center justify-center shadow-md hover:bg-indigo-400 duration-300 w-fit p-2 rounded-lg text-sm'>
+                <button onClick={() => {
+                    setEditingNote(note);
+                    setShowModalEdit(true);
+                  }} 
+                    className=' bg-blue-200 flex items-center justify-center shadow-md hover:bg-indigo-400 duration-300 w-fit p-2 rounded-lg text-sm'>
                   <MdModeEditOutline className='text-lg'/>
                 </button>
                 <DeleteButton id={note.id} onDeleteSuccess={handleDeleteSuccess} />
               </div>
             </div>
           ))}
-          <button onClick={() => setShowModalAdd(true)} className='shadow-md p-3 rounded-lg border-2 border-dashed duration-300 hover:bg-indigo-100 flex justify-center items-center text-3xl text-gray-400 h-56'>
+          <button onClick={() => setShowModalAdd(true)} className='shadow-md p-3 rounded-lg border-2 border-dashed duration-300 hover:bg-indigo-100 flex justify-center items-center text-3xl text-gray-400 h-60'>
             <CiCirclePlus />
           </button>
         </div>
@@ -146,7 +169,7 @@ const Notes = () => {
         </div>
       )}
 
-      {showModalEdit && (
+      {showModalEdit && editingNote &&(
         <div className='fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50'>
           <Pointer>
             <LuMousePointer2 className='text-2xl text-indigo-600 fill-indigo-500 '/>
@@ -155,7 +178,11 @@ const Notes = () => {
             <button className='absolute top-3 right-3' onClick={() => setShowModalEdit(false)}>
               <XIcon className='text-gray-500 hover:text-gray-700' />
             </button>
-
+            <EditFormComponent note={editingNote} onSuccess={() => {
+              setShowModalEdit(false);
+              fetchNotes();
+              setEditingNote(null);
+            }} />
           </div>
         </div>
       )}
