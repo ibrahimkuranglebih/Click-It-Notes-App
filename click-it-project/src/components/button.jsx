@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from './ui/button';
 import { set } from 'zod';
+import { useTheme } from '@/lib/theme';
 
 export const SaveButton = ({ label }) => {
   const { pending } = useFormStatus();
@@ -93,22 +94,22 @@ export const DeleteButton = ({id, onDeleteSuccess}) => {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button className="bg-red-400 rounded-lg p-2 w-fit text-sm hover:bg-red-600 shadow-md">
+        <Button className="bg-red-400 rounded-full p-3 text-md hover:bg-red-600 shadow-md">
           <MdOutlineDelete className="text-lg" />
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Apakah Anda Yakin Ingin Menghapus Notes?</AlertDialogTitle>
+          <AlertDialogTitle>Are you sure to delete the note?</AlertDialogTitle>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Batal</AlertDialogCancel>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction 
             onClick={handleDeleteNote}
             disabled={isDeleting}
             className="bg-red-500 hover:bg-red-600"
           >
-            {isDeleting ? "Menghapus..." : "Hapus"}
+            {isDeleting ? "Deleting..." : "Delete"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -117,5 +118,9 @@ export const DeleteButton = ({id, onDeleteSuccess}) => {
 }
 
 export const DetailNotes = ({id}) =>{
-  
+  return (
+    <div>
+      <button className='bg-blue-400 text-gray-100 hover:bg-blue-600 hover:text-white duration-200 p-2 w-fit rounded-lg shadow-md'>Detail</button>
+    </div>
+  );
 }

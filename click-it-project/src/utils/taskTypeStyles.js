@@ -8,6 +8,5 @@ export const getTaskTypeStyle = (taskType) => {
   };
 
   // Convert taskType to uppercase to match enum keys
-  const upperType = taskType?.toUpperCase();
-  return typeStyles[upperType] || typeStyles.OTHERS;
+  return typeStyles[taskType?.toUpperCase()] || typeStyles.OTHERS;
 };
