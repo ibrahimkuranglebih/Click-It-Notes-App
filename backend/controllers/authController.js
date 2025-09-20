@@ -6,20 +6,19 @@ export const login = async (req, res) => {
     try {
         const { email, password } = req.body;
         if (!email || !password) {
-            return res.status(400).json({ error: "Email dan password wajib diisi" });
+            return res.status(400).json({ error: "Email and password are required" });
         }
 
         const user = await prisma.user.findFirst({ where: { email } });
         if (!user) {
-            return res.status(401).json({ error: "Email atau password salah" });
+            return res.status(401).json({ error: "Incorrect email or password" });
         }
 
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            return res.status(401).json({ error: "Email atau password salah" });
+            return res.status(401).json({ error: "Incorrect email or password" });
         }
 
-        // ✅ Generate token
         const token = jwt.sign(
             { id: user.id, email: user.email },
             process.env.JWT_SECRET,
@@ -32,10 +31,10 @@ export const login = async (req, res) => {
             maxAge: 3600000,
         });
 
-        res.json({ message: "Login berhasil", user, token });
+        res.json({ message: "Login Success", user, token });
     } catch (error) {
-        console.error("Error saat login:", error);
-        res.status(500).json({ error: "Terjadi kesalahan di server" });
+        console.error("Error during login:", error);
+        res.status(500).json({ error: "An error occurred on the server" });
     }
 };
 
@@ -67,32 +66,32 @@ export const getMe = async (req, res) => {
         });
 
         if (!user) {
-            return res.status(404).json({ message: "User tidak ditemukan" });
+            return res.status(404).json({ message: "User not found" });
         }
 
         res.json({ user });
     } catch (error) {
-        console.error("Error saat mengambil data user:", error);
-        res.status(500).json({ message: "Terjadi kesalahan di server" });
+        console.error("Error while retrieving user data:", error);
+        res.status(500).json({ message: "An error occurred on the server" });
     }
 };
 
 export const register = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email, password, confirmedPassword } = req.body;
         
         // Validasi input
         if (!email || !password) {
-            return res.status(400).json({ error: "Email dan password wajib diisi" });
+            return res.status(400).json({ error: "Email and password are required" });
         }
 
         if (!/\S+@\S+\.\S+/.test(email)) {
-            return res.status(400).json({ error: "Format email tidak valid" });
+            return res.status(400).json({ error: "Invalid email format" });
         }
 
 
         if (password.length < 8) {
-            return res.status(400).json({ error: "Password minimal 8 karakter" });
+            return res.status(400).json({ error: "Password must be at least 8 characters" });
         }
 
         const existingUser = await prisma.user.findUnique({ 
@@ -100,7 +99,11 @@ export const register = async (req, res) => {
         });
         
         if (existingUser) {
-            return res.status(400).json({ error: "Email sudah terdaftar" });
+            return res.status(400).json({ error: "Email is already registered" });
+        }
+
+        if (password !== confirmedPassword) {
+            return res.status(400).json({ error: "Passwords do not match" });
         }
 
         // Hash password sebelum disimpan
@@ -134,19 +137,19 @@ export const register = async (req, res) => {
         });
 
         res.status(201).json({ 
-            message: "Registrasi berhasil", 
+            message: "Registration successful", 
             user: newUser,
             token 
         });
     } catch (error) {
-        console.error("Error saat registrasi:", error);
+        console.error("Error during registration:", error);
         
         // Handle error unik constraint khusus
         if (error.code === 'P2002' && error.meta?.target?.includes('email')) {
-            return res.status(400).json({ error: "Email sudah terdaftar" });
+            return res.status(400).json({ error: "Email is already registered" });
         }
         
-        res.status(500).json({ error: "Terjadi kesalahan di server" });
+        res.status(500).json({ error: "An error occurred on the server" });
     }
 };
 

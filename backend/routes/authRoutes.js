@@ -9,9 +9,14 @@ router.post('/login', login);
 router.get('/me', authenticateToken, getMe);
 router.get('/session', session);
 
+// ✅ Endpoint validate token
+router.get('/validate', authenticateToken, (req, res) => {
+  res.status(200).json({ valid: true, user: req.user });
+});
+
 router.post('/logout', (req, res) => {
-    res.clearCookie("token");
-    res.json({ message: "Logout berhasil" });
+  res.clearCookie("token");
+  res.json({ message: "Logout berhasil" });
 });
 
 export default router;

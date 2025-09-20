@@ -12,8 +12,8 @@ import { Status, Type } from '@prisma/client';
 // **Schema Validasi Note**
 const NoteSchema = z.object({
     userId : z.string().min(10),
-    title: z.string().min(1, "Judul harus diisi"),
-    deskripsi: z.string().min(3, "Deskripsi minimal 3 karakter"),
+    title: z.string().min(1, "Title Must Have 1 Character"),
+    deskripsi: z.string().min(3, "Descriptions Must Have 3 Character"),
     taskType: z.enum(["work", "study", "event", "task", "others"]).default("others"),
     taskStatus: z.enum(["unfinished", "finished"]).default("unfinished"),
 });
@@ -70,13 +70,12 @@ export const SaveNote = async (prevState: any, formData: FormData) => {
         return { success: true, shouldRedirect: true }; // Tambahkan flag untuk redirect
     } catch (error) {
         console.error("Terjadi kesalahan saat menyimpan note:", error);
-        return { Error: { general: "Gagal menyimpan catatan. Coba lagi nanti." } };
+        return { Error: { general: "Failed to Save Note. Try Again Later." } };
     }
 };
 
 
 export const updateNote = async (id: string, prevState: any, formData: FormData) => {
-
     try {
         const validateNotes = NoteSchema.safeParse({
             userId: formData.get("userId"),
@@ -123,7 +122,7 @@ export const deleteNote = async (id: string) => {
       where: {id}
     });
     revalidatePath('/notes');
-    return { success: true, message: "Note berhasil dihapus" };
+    return { success: true, message: "Note Was Deleted" };
   } catch (error) {
     return { Error: { general: "Gagal menghapus catatan. Coba lagi nanti." } };
   }

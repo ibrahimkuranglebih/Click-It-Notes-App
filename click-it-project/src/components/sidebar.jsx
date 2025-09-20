@@ -1,14 +1,19 @@
 'use client'
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DarkMode } from './dark-toggle';
 import { useTheme } from '../lib/theme';
-import Image from 'next/image';
 import { RiDashboardLine } from "react-icons/ri";
 import { FaNoteSticky } from "react-icons/fa6";
 
 export const Sidebar = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { isDarkMode } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  // Pastikan komponen sudah dimount sebelum render
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const toggleSidebar = () => {
     setIsSidebarOpen((prevState) => !prevState);
@@ -17,6 +22,11 @@ export const Sidebar = () => {
   const closeSidebar = () => {
     setIsSidebarOpen(false);
   };
+
+  // Hindari render sampai komponen dimount
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <div>
@@ -68,7 +78,7 @@ export const Sidebar = () => {
             </p>
           </div>
           <ul className="space-y-2 font-medium mt-3">
-          <li className="relative">
+            <li className="relative">
               <a
                 href="/notes"
                 className={`flex items-center p-2 rounded-[6px] ${
@@ -129,9 +139,9 @@ export const Sidebar = () => {
                 </svg>
               </a>
             </li>
-            <li className="flex flex-row gap-3 p-2 items-center ">
-              <p className="text-black dark:text-white">Dark Mode </p>
-              <DarkMode className="absolute right-2 top-1/2 transform -translate-y-1/2"/>
+            <li className="flex flex-row gap-3 p-2 items-center justify-between">
+              <p className="text-black dark:text-white">Dark Mode</p>
+              <DarkMode />
             </li>
           </ul>
         </div>

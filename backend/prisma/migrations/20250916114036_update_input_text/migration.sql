@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Note" ALTER COLUMN "title" SET DATA TYPE TEXT,
+ALTER COLUMN "deskripsi" SET DATA TYPE TEXT;

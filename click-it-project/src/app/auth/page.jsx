@@ -5,13 +5,18 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import RotatingText from "@/components/ui/rotating-text";
 import InfiniteScroll from "@/components/ui/scroll-infinite";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { ChevronLeftIcon, XIcon } from 'lucide-react';
 
 export default function AuthPage() {
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showconfirmPassword, setShowconfirmPassword] = useState(false);
   const [errors, setErrors] = useState({});
+  const [serverMessage, setServerMessage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const { data: session } = useSession();
   const router = useRouter();
@@ -22,57 +27,38 @@ export default function AuthPage() {
     }
   }, [session, router]);
 
-  const validateForm = () => {
-    const newErrors = {};
-    
-    if (!email) {
-      newErrors.email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = "Email is invalid";
-    }
-    
-    if (!password) {
-      newErrors.password = "Password is required";
-    } else if (password.length < 8) {
-      newErrors.password = "Password must be at least 8 characters";
-    }
-    
-    if (isRegister) {
-      if (!confirmPassword) {
-        newErrors.confirmPassword = "Please confirm your password";
-      } else if (password !== confirmPassword) {
-        newErrors.confirmPassword = "Passwords do not match";
-      }
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
     
     setIsLoading(true);
     
     try {
       const endpoint = isRegister ? "register" : "login";
+      const payload = isRegister 
+      ? { email, password, confirmedPassword: confirmPassword } // kirim confirmPassword
+      : { email, password };
+      
       const res = await fetch(`http://localhost:5000/api/auth/${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify(payload),
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || "Authentication failed");
+        if (data.error?.toLowerCase().includes("email")) {
+          setErrors({ email: data.error });
+        } else if (data.error?.toLowerCase().includes("password")) {
+          setErrors({ password: data.error });
+        } else {
+          setErrors({ backend: data.error }); // fallback kalau bukan spesifik field
+        }
+        return;
       }
 
-      const data = await res.json();
-      
+      setServerMessage({ type: "success", text: data.message || "Success" });
+
       if (data.token && data.user) {
         localStorage.setItem("authToken", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
@@ -86,12 +72,12 @@ export default function AuthPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  };  
 
   return (
     <div className="flex flex-row h-screen overflow-hidden font-Instrument_Sans">
       {/* Left Section with Infinite Scroll */}
-      <div className="h-full flex justify-center flex-col items-start w-1/2 bg-gray-300 p-20 relative overflow-hidden">
+      <div className="h-full flex justify-center flex-col items-start w-1/2 bg-gray-300 p-20 relative overflow-hidden max-[768px]:hidden">
         <div className="absolute inset-0">
           <InfiniteScroll
             items={[
@@ -134,7 +120,7 @@ export default function AuthPage() {
       </div>
 
       {/* Right Section */}
-      <div className="h-full w-1/2 flex justify-center items-center bg-white dark:bg-black relative overflow-hidden">
+      <div className="h-full w-1/2 max-[768px]:w-full flex flex-col gap-4 justify-center items-center bg-white dark:bg-black relative overflow-hidden">
         <div className="absolute inset-0 dark:bg-grid-small-white/[0.1] bg-grid-small-black/[0.1]"></div>
         <div className="absolute inset-0 flex items-center justify-center [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]"></div>
 
@@ -155,32 +141,43 @@ export default function AuthPage() {
               />
               {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
             </div>
-            
-            <div>
+            {/* Password Field */}
+            <div className="relative">
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className={`border ${errors.password ? 'border-red-500' : 'border-gray-300'} p-2 rounded-md hover:shadow-inner duration-300 w-full`}
+                className="border p-2 rounded-md w-full"
                 required
               />
-              {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
-              {isRegister && (
-                <p className="text-xs text-gray-500 mt-1">Password must be at least 8 characters</p>
-              )}
+              <button
+                type="button"
+                className="absolute right-3 top-2.5 text-gray-500"
+                onClick={() => setShowPassword(!showPassword)} // ✅ Benar
+              >
+                {showPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
+              </button>
             </div>
-            
+            {/*Confirm password */}
             {isRegister && (
-              <div>
+              <div className="relative">
                 <input
-                  type="password"
+                  type={showconfirmPassword ? "text" : "password"}
                   placeholder="Confirm Password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className={`border ${errors.confirmPassword ? 'border-red-500' : 'border-gray-300'} p-2 rounded-md hover:shadow-inner duration-300 w-full`}
-                  required={isRegister}
+                  className="border p-2 rounded-md w-full"
+                  required
                 />
+                <button
+                  type="button"
+                  className="absolute right-3 top-2.5 text-gray-500"
+                  onClick={() => setShowconfirmPassword(!showconfirmPassword)} // ✅ Benar
+                >
+                  {showconfirmPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
+                </button>
+                {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
                 {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>}
               </div>
             )}
@@ -231,6 +228,14 @@ export default function AuthPage() {
             </button>
           </p>
         </div>
+        <button
+            onClick={() => {
+              router.push("../");
+            }}
+            className="bg-black p-2 rounded-full group w-fit duration-300 hover:bg-primary/90 z-20"
+          >
+            <ChevronLeftIcon className="text-white transition-transform duration-300 group-hover:-translate-x-1" />
+        </button>
       </div>
     </div>
   );
